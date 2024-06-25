@@ -1,0 +1,29 @@
+name: flutter_application_1
+description: A new Flutter project.
+
+publish_to: 'none' # Remove esta linha se você deseja publicar seu pacote
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.17.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.1
+  intl: ^0.17.0
+  pdf: ^3.6.0
+  path_provider: ^2.0.2
+  printing: ^5.10.0
+  open_file: ^3.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/logo.jpg
