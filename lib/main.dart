@@ -3,14 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
-import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:open_file/open_file.dart';
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 void main() {
   runApp(MyApp());
@@ -44,7 +43,7 @@ class LoginPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Image.asset(
-              'assets/logo.jpg', // caminho para a imagem no pubspec.yaml
+              'assets/logo_azul.jpg', // caminho para a imagem no pubspec.yaml
               height: 120.0,
             ),
             Padding(
@@ -505,62 +504,74 @@ Future<void> _generatePdf(BuildContext context, Map<String, dynamic> spot, Strin
 
     final clientInfo = info['client_info'];
     final fiscalInfo = info['fiscal_info'];
-
+    final font = await rootBundle.load('assets/open-sans.ttf');
+    final ttf = pw.Font.ttf(font);
     pdf.addPage(
       pw.Page(
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('Informações do Cliente', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Cidade: ${clientInfo['cidade']}'),
-              pw.Text('CPF: ${clientInfo['cpf']}'),
-              pw.Text('Email: ${clientInfo['email']}'),
-              pw.Text('Estado: ${clientInfo['estado']}'),
-              pw.Text('Placa do Carro: ${clientInfo['placaDoCarro']}'),
+              pw.Text('Informações do Cliente', style: pw.TextStyle(font: ttf, fontSize: 18, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Cidade: ${clientInfo['cidade']}', style: pw.TextStyle(font: ttf)),
+              pw.Text('CPF: ${clientInfo['cpf']}', style: pw.TextStyle(font: ttf)),
+              pw.Text('Email: ${clientInfo['email']}', style: pw.TextStyle(font: ttf)),
+              pw.Text('Estado: ${clientInfo['estado']}', style: pw.TextStyle(font: ttf)),
+              pw.Text('Placa do Carro: ${clientInfo['placaDoCarro']}', style: pw.TextStyle(font: ttf)),
               pw.SizedBox(height: 20),
-              pw.Text('Informações do Fiscal', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Cidade: ${fiscalInfo['cidade']}'),
-              pw.Text('CPF: ${fiscalInfo['cpf']}'),
-              pw.Text('Email: ${fiscalInfo['email']}'),
-              pw.Text('Estado: ${fiscalInfo['estado']}'),
+              pw.Text('Informações do Fiscal', style: pw.TextStyle(font: ttf, fontSize: 18, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Cidade: ${fiscalInfo['cidade']}', style: pw.TextStyle(font: ttf)),
+              pw.Text('CPF: ${fiscalInfo['cpf']}', style: pw.TextStyle(font: ttf)),
+              pw.Text('Email: ${fiscalInfo['email']}', style: pw.TextStyle(font: ttf)),
+              pw.Text('Estado: ${fiscalInfo['estado']}', style: pw.TextStyle(font: ttf)),
               pw.SizedBox(height: 20),
-              pw.Text('Registro de Atraso:', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Placa: ${spot['placaDoCarro']}'),
-              pw.Text('Hora de Saída: ${spot['horaSaida']}'),
-              pw.Text('Tempo de atraso: ${_formatDuration(_calculateRemainingTime(spot['horaSaida']))}'),
+              pw.Text('Registro de Atraso:', style: pw.TextStyle(font: ttf, fontSize: 20, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Placa: ${spot['placaDoCarro']}', style: pw.TextStyle(font: ttf)),
+              pw.Text('Hora de Saída: ${spot['horaSaida']}', style: pw.TextStyle(font: ttf)),
+              pw.Text('Tempo de atraso: ${_formatDuration(_calculateRemainingTime(spot['horaSaida']))}', style: pw.TextStyle(font: ttf)),
             ],
           );
         },
       ),
     );
-
-    if (kIsWeb) {
-      // Para a web, usamos o pacote `printing` para baixar o PDF.
-      await Printing.sharePdf(bytes: await pdf.save(), filename: 'report.pdf');
-    } else {
-      // Para plataformas móveis, usamos o pacote `path_provider` e `open_file`.
-      final directory = await getApplicationDocumentsDirectory();
-      final file = io.File('${directory.path}/report.pdf');
-      await file.writeAsBytes(await pdf.save());
-
-      // Exibir o PDF
-      final result = await OpenFile.open(file.path);
-      if (result.type != ResultType.done) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao abrir o PDF'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    }
+    
+    
+   if (kIsWeb) {
+    // Para a web, usamos o pacote printing para baixar o PDF.
+    await Printing.sharePdf(bytes: await pdf.save(), filename: 'registro_atraso_${clientInfo['cpf']}.pdf');
   } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Erro ao obter informações...'),
-        duration: Duration(seconds: 3),
+    final bytes = await pdf.save();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PdfViewerPage(pdfBytes: bytes),
       ),
     );
   }
-}}
+}
+}
+}
+
+class PdfViewerPage extends StatelessWidget {
+  final Uint8List pdfBytes;
+
+  PdfViewerPage({required this.pdfBytes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Visualizar PDF'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: SfPdfViewer.memory(
+        pdfBytes, // Your PDF bytes
+     ),
+    );
+}
+}
